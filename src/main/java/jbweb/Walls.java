@@ -1,15 +1,14 @@
 package jbweb;
 
-import java.io.FileWriter;
-import java.io.IOException;
+import bwapi.*;
+import bwem.Area;
+import bwem.ChokePoint;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-
-import bwapi.*;
-import bwem.*;
 
 public class Walls {
     private static HashMap<ChokePoint, Wall> walls = new HashMap<>();
@@ -109,23 +108,19 @@ public class Walls {
     }
 
     /// Creates a Forge Fast Expand at the natural.
-    /// Places 1 Forge, 1 Gateway, 1 Pylon and 10 Cannons.
+    /// Places 1 Forge, 1 Gateway, 1 Pylon and N Cannons.
     public static Wall createFFE() {
+        return createFFE(6);
+    }
+    public static Wall createFFE(int cannons) {
         List<UnitType> buildings = new ArrayList<>();
         buildings.add(UnitType.Protoss_Forge);
         buildings.add(UnitType.Protoss_Gateway);
         buildings.add(UnitType.Protoss_Pylon);
         List<UnitType> defenses = new ArrayList<>();
-        defenses.add(UnitType.Protoss_Photon_Cannon);
-        defenses.add(UnitType.Protoss_Photon_Cannon);
-        defenses.add(UnitType.Protoss_Photon_Cannon);
-        defenses.add(UnitType.Protoss_Photon_Cannon);
-        defenses.add(UnitType.Protoss_Photon_Cannon);
-        defenses.add(UnitType.Protoss_Photon_Cannon);
-        defenses.add(UnitType.Protoss_Photon_Cannon);
-        defenses.add(UnitType.Protoss_Photon_Cannon);
-        defenses.add(UnitType.Protoss_Photon_Cannon);
-        defenses.add(UnitType.Protoss_Photon_Cannon);
+        for (int i = 0; i < cannons; ++i) {
+            defenses.add(UnitType.Protoss_Photon_Cannon);
+        }
         return createWall(buildings, JBWEB.getNaturalArea(), JBWEB.getNaturalChoke(), UnitType.None, defenses, true, false);
     }
 

@@ -221,7 +221,7 @@ public class JBWEB {
                     boolean wrongArea = false;
                     for (ChokePoint choke : area.getChokePoints()) {
                         if ((!choke.isBlocked() && choke.getNodePosition(ChokePoint.Node.END1).getDistance(choke.getNodePosition(ChokePoint.Node.END2)) <= 2)
-                                || findNode(nonChokes, choke) != nonChokes.get(nonChokes.size()-1)) {
+                                || findNode(nonChokes, choke) != null) {
                             wrongArea = true;
                         }
                     }

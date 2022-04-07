@@ -1,15 +1,16 @@
 package jbweb;
 
-import bwapi.*;
+import bwapi.Pair;
+import bwapi.Position;
+import bwapi.TilePosition;
+import jps.Graph;
+import jps.JPS;
+import jps.Tile;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-
-import jps.*;
 
 import static jbweb.Pathfinding.maxCacheSize;
 import static jbweb.Pathfinding.unitPathCache;
@@ -71,28 +72,6 @@ public class Path {
         return tiles;
     }
 
-    // This function requires that parentGrid has been filled in for a path from source to target
-    private void createPath(TilePosition s, TilePosition t, TilePosition[][] parentGrid) {
-        tiles.add(target);
-        reachable = true;
-        TilePosition check = parentGrid[target.x][target.y];
-        dist += new Position(target).getDistance(new Position(check));
-
-        do {
-            tiles.add(check);
-            TilePosition prev = check;
-            check = parentGrid[check.x][check.y];
-            dist += new Position(prev).getDistance(new Position(check));
-        } while (check != source);
-
-        // HACK: Try to make it more accurate to positions instead of tiles
-        Position correctionSource = new Position(tiles.get(tiles.size()-2)); // Second to last tile
-        Position correctionTarget = new Position(tiles.get(1)); // Second tile
-        dist += s.getDistance(correctionSource.toTilePosition());
-        dist += t.getDistance(correctionTarget.toTilePosition());
-        dist -= 64.0;
-    }
-
     /// Creates a path from the source to the target using JPS and collision provided by BWEB based on walkable tiles and used tiles.
     public void createUnitPath(Position s, Position t, Wall wall) {
         target = new TilePosition(t);
@@ -126,8 +105,8 @@ public class Path {
 
         // If not reachable based on previous paths to this area
         if (target.isValid(JBWEB.game) && JBWEB.mapBWEM.getMap().getArea(target) != null && wall.wallWalkable(new TilePosition(source.x, source.y))) {
-            int checkReachable = unitPathCache.notReachableThisFrame.get(JBWEB.mapBWEM.getMap().getArea(target));
-            if (checkReachable >= JBWEB.game.getFrameCount() && JBWEB.game.getFrameCount() > 0) {
+            Integer checkReachable = unitPathCache.notReachableThisFrame.get(JBWEB.mapBWEM.getMap().getArea(target));
+            if (checkReachable != null && checkReachable >= JBWEB.game.getFrameCount() && JBWEB.game.getFrameCount() > 0) {
                 reachable = false;
                 dist = Double.MAX_VALUE;
                 return;
@@ -137,15 +116,8 @@ public class Path {
         // If we found a path, store what was found
         List<List<Tile>> grid = arrayToTileList(JBWEB.walkGrid);
         JPS<jps.Tile> jps = JPS.JPSFactory.getJPS(new Graph<>(grid), Graph.Diagonal.NO_OBSTACLES);
-        Future<Queue<jps.Tile>> futurePath = jps.findPath(new jps.Tile(source.x, source.y), new jps.Tile(target.x, target.y));
-        Queue<jps.Tile> path = new LinkedList<>();
-        try {
-            path = futurePath.get();
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        }
-
-        if (!path.isEmpty()) {
+        Queue<jps.Tile> path = jps.findPathSync(new jps.Tile(source.x, source.y), new jps.Tile(target.x, target.y));
+        if (path != null) {
             Position current = s;
             for (jps.Tile jpsTile : path) {
                 TilePosition tile = new TilePosition(jpsTile.getX(), jpsTile.getY());
@@ -172,24 +144,25 @@ public class Path {
     }
 
     /// Creates a path from the source to the target using BFS.
-    public void bfsPath(Position s, Position t, Wall wall) {
-        TilePosition source = new TilePosition(s);
-        TilePosition target = new TilePosition(t);
+    public void bfsPath(Position bfsSourceP, Position bfsTargetP, Wall wall) {
+        TilePosition bfsSource = new TilePosition(bfsSourceP);
+        TilePosition bfsTarget = new TilePosition(bfsTargetP);
         List<TilePosition> direction = new ArrayList<>();
         direction.add(new TilePosition(0, 1));
         direction.add(new TilePosition(1, 0));
         direction.add(new TilePosition(-1, 0));
         direction.add(new TilePosition(0, -1));
 
-        if (source.equals(target)
-                || source.equals(new TilePosition(0, 0))
-                || target.equals(new TilePosition(0, 0)))
+        if (bfsSource.equals(bfsTarget)
+                || bfsSource.equals(new TilePosition(0, 0))
+                || bfsTarget.equals(new TilePosition(0, 0)))
             return;
 
         TilePosition[][] parentGrid = new TilePosition[256][256];
+
         Queue<TilePosition> nodeQueue = new LinkedList<>();
-        nodeQueue.add(source);
-        parentGrid[source.x][source.y] = source;
+        nodeQueue.add(bfsSource);
+        parentGrid[bfsSource.x][bfsSource.y] = bfsSource;
 
         // While not empty, pop off top the closest TilePosition to target
         while (!nodeQueue.isEmpty()) {
@@ -201,7 +174,8 @@ public class Path {
 
                 if (next.isValid(JBWEB.game)) {
                     // If next has a parent or is a collision, continue
-                    if (!parentGrid[next.x][next.y].equals(new TilePosition(0, 0)) || !wall.wallWalkable(next))
+                    TilePosition existingParent = parentGrid[next.x][next.y];
+                    if (existingParent != null || !wall.wallWalkable(next))
                         continue;
 
                     // Check diagonal collisions where necessary
@@ -213,8 +187,8 @@ public class Path {
                     parentGrid[next.x][next.y] = tile;
 
                     // If at target, return path
-                    if (next.equals(target)) {
-                        createPath(s.toTilePosition(), t.toTilePosition(), parentGrid);
+                    if (next.equals(bfsTarget)) {
+                        bfsPath_createPath(bfsSource, bfsTarget, parentGrid);
                         return;
                     }
 
@@ -224,5 +198,30 @@ public class Path {
         }
         reachable = false;
         dist = Double.MAX_VALUE;
+    }
+
+    // This function requires that parentGrid has been filled in for a path from source to target
+    private void bfsPath_createPath(
+            TilePosition bfsSource,
+            TilePosition bfsTarget,
+            TilePosition[][] parentGrid) {
+        tiles.add(bfsTarget);
+        reachable = true;
+        TilePosition check = parentGrid[bfsTarget.x][bfsTarget.y];
+        dist += new Position(bfsTarget).getDistance(new Position(check));
+
+        do {
+            tiles.add(check);
+            TilePosition prev = check;
+            check = parentGrid[check.x][check.y];
+            dist += new Position(prev).getDistance(new Position(check));
+        } while (check != bfsSource);
+
+        // HACK: Try to make it more accurate to positions instead of tiles
+        Position correctionSource = new Position(tiles.get(tiles.size()-2)); // Second to last tile
+        Position correctionTarget = new Position(tiles.get(1)); // Second tile
+        dist += bfsSource.getDistance(correctionSource.toTilePosition());
+        dist += bfsTarget.getDistance(correctionTarget.toTilePosition());
+        dist -= 64.0;
     }
 }

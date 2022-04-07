@@ -18,7 +18,7 @@ public class Wall {
     private List<UnitType> rawBuildings;
     private List<UnitType> rawDefenses;
     private List<Area> accessibleNeighbors;
-    private HashMap<TilePosition, UnitType> currentLayout;
+    private HashMap<TilePosition, UnitType> currentLayout = new HashMap<>(); // IntelliJ IDEA warns incorrectly that this instantiation is unnecessary.
     private HashMap<TilePosition, UnitType> bestLayout = new HashMap<>();
     private Area area;
     private ChokePoint choke;
@@ -621,7 +621,9 @@ public class Wall {
         // Set important terrain features
         bestWallScore = 0;
         accessibleNeighbors = area.getAccessibleNeighbors();
-        chokeAngle = JBWEB.getAngle(new Pair<>(new Position(choke.getNodePosition(ChokePoint.Node.END1).toPosition().x + 4, choke.getNodePosition(ChokePoint.Node.END1).toPosition().y + 4),
+        chokeAngle = JBWEB.getAngle(
+            new Pair<>(
+                new Position(choke.getNodePosition(ChokePoint.Node.END1).toPosition().x + 4, choke.getNodePosition(ChokePoint.Node.END1).toPosition().y + 4),
                 new Position(choke.getNodePosition(ChokePoint.Node.END2).toPosition().x + 4, choke.getNodePosition(ChokePoint.Node.END2).toPosition().y + 4)));
 
         int count = 0;
