@@ -82,7 +82,7 @@ public class Path {
         if (unitPathCache.indexList.get(pathPoints) == null) {
             if (unitPathCache.pathCache.size() == maxCacheSize) {
                 Path last = unitPathCache.pathCache.get(unitPathCache.pathCache.size()-1);
-                unitPathCache.pathCache.remove(unitPathCache.pathCache.size()-1);
+                unitPathCache.pathCache.remove(last);
                 unitPathCache.indexList.remove(new Pair<>(last.getSource(), last.getTarget()));
             }
         }

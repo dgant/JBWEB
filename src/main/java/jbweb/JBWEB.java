@@ -149,7 +149,7 @@ public class JBWEB {
             double distBest = Double.MAX_VALUE;
             for (ChokePoint choke : mainArea.getChokePoints()) {
                 double dist = getGroundDistance(choke.getCenter().toPosition(), mainPosition);
-                if (dist < distBest && findNode(naturalChokes, choke) == naturalChokes.get(naturalChokes.size()-1)) {
+                if (dist < distBest && findNode(naturalChokes, choke) == null) {
                     mainChoke = choke;
                     distBest = dist;
                 }
@@ -161,7 +161,7 @@ public class JBWEB {
             double distBest = Double.MAX_VALUE;
             for (ChokePoint choke : naturalArea.getChokePoints()) {
                 double dist = getGroundDistance(choke.getCenter().toPosition(), mainPosition);
-                if (dist < distBest && findNode(mainChokes, choke) != mainChokes.get(mainChokes.size()-1)) {
+                if (dist < distBest && findNode(mainChokes, choke) != null) {
                     mainChoke = choke;
                     distBest = dist;
                 }

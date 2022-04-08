@@ -112,7 +112,7 @@ public class Wall {
             largeTiles.add(here);
         else if (building.tileWidth() >= 3)
             mediumTiles.add(here);
-        else if (building != rawDefenses.get(rawDefenses.size()-1))
+        else if (rawDefenses.contains(building))
             defenses.add(here);
         else if (building.tileWidth() >= 2)
             smallTiles.add(here);
@@ -305,7 +305,7 @@ public class Wall {
     private boolean placeCheck(UnitType type, TilePosition here) {
         // Allow Pylon to overlap station defenses
         if (type == UnitType.Protoss_Pylon) {
-            if (closestStation != null && here != closestStation.getDefenseLocations().get(closestStation.getDefenseLocations().size()-1)) {
+            if (closestStation != null && closestStation.getDefenseLocations().contains(here)) {
                 return true;
             }
         }
@@ -392,7 +392,7 @@ public class Wall {
                     terrainTight = true;
                 }
                 // Check if it's tight with a parent
-                if (!parentTight && parent != rawBuildings.get(rawBuildings.size()-1) && (!requireTight || (gapValue < vertTight && (leftCorner ? gapValue < horizTight : gapValue < horizTight)))) {
+                if (!parentTight && rawBuildings.contains(parent) && (!requireTight || (gapValue < vertTight && (leftCorner ? gapValue < horizTight : gapValue < horizTight)))) {
                     parentTight = true;
                 }
             } else {
@@ -401,7 +401,7 @@ public class Wall {
                     terrainTight = true;
                 }
                 // Check if it's tight with a parent
-                if (!parentTight && parent != rawBuildings.get(rawBuildings.size()-1) && (!requireTight || gapValue < vertTight)) {
+                if (!parentTight && rawBuildings.contains(parent) && (!requireTight || gapValue < vertTight)) {
                     parentTight = true;
                 }
             }
@@ -461,7 +461,7 @@ public class Wall {
                     terrainTight = true;
                 }
                 // Check if it's tight with a parent
-                if (!parentTight && parent != rawBuildings.get(rawBuildings.size()-1) && (!requireTight || (gapValue < horizTight && (topCorner ? gapValue < vertTight : gapValue < vertTight)))) {
+                if (!parentTight && rawBuildings.contains(parent) && (!requireTight || (gapValue < horizTight && (topCorner ? gapValue < vertTight : gapValue < vertTight)))) {
                     parentTight = true;
                 }
             } else {
@@ -470,7 +470,7 @@ public class Wall {
                     terrainTight = true;
                 }
                 // Check if it's tight with a parent
-                if (!parentTight && parent != rawBuildings.get(rawBuildings.size()-1) && (!requireTight || gapValue < horizTight)) {
+                if (!parentTight && rawBuildings.contains(parent) && (!requireTight || gapValue < horizTight)) {
                     parentTight = true;
                 }
             }
@@ -591,7 +591,7 @@ public class Wall {
         // Checks for any collision and inverts the return value
         if (!tile.isValid(JBWEB.game)
                 || (JBWEB.mapBWEM.getMap().getArea(tile) != null && JBWEB.mapBWEM.getMap().getArea(tile) != area
-                && JBWEB.mapBWEM.getMap().getArea(tile) == accessibleNeighbors.get(accessibleNeighbors.size()-1))
+                && accessibleNeighbors.contains(JBWEB.mapBWEM.getMap().getArea(tile)))
             || JBWEB.isReserved(tile, 1, 1) || !JBWEB.isWalkable(tile)
             || (allowLifted && JBWEB.isUsed(tile, 1, 1) != UnitType.Terran_Barracks && JBWEB.isUsed(tile, 1, 1) != UnitType.None)
             || (!allowLifted && JBWEB.isUsed(tile, 1, 1) != UnitType.None && JBWEB.isUsed(tile, 1, 1) != UnitType.Zerg_Larva)
@@ -666,7 +666,7 @@ public class Wall {
         }
 
         // Sort all the pieces and iterate over them to find the best wall - by Hannes
-        if (UnitType.Protoss_Pylon != rawBuildings.get(rawBuildings.size()-1)) {
+        if (rawBuildings.contains(UnitType.Protoss_Pylon)) {
             List<UnitType> tmpList = new ArrayList<>();
             List<Integer> indexes = new ArrayList<>();
             for (UnitType rawBuilding : rawBuildings) {
@@ -680,7 +680,7 @@ public class Wall {
             }
             Collections.sort(rawBuildings);
             rawBuildings.addAll(tmpList);
-        } else if (UnitType.Zerg_Hatchery != rawBuildings.get(rawBuildings.size()-1)) {
+        } else if (rawBuildings.contains(UnitType.Zerg_Hatchery)) {
             List<UnitType> tmpList = new ArrayList<>();
             List<Integer> indexes = new ArrayList<>();
             for (UnitType rawBuilding : rawBuildings) {
@@ -1059,7 +1059,7 @@ public class Wall {
                     TilePosition t = new TilePosition(x, y);
                     Position center = new Position(t.toPosition().x + width/2, t.toPosition().y + height/2);
                     Position closestGeo = JBWEB.getClosestChokeTile(choke, center);
-                    boolean overlapsDefense = closestStation != null && t != closestStation.getDefenseLocations().get(closestStation.getDefenseLocations().size()-1) && t.equals(defenses.get(defenses.size()-1));
+                    boolean overlapsDefense = closestStation != null && closestStation.getDefenseLocations().contains(t) && defenses.contains(t);
 
                     double dist = center.getDistance(closestGeo);
                     boolean tooClose = dist < furthest || center.getDistance(openingCenter) < arbitraryCloseMetric;

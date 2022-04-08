@@ -12,7 +12,7 @@ import java.util.List;
 
 public class Walls {
     private static HashMap<ChokePoint, Wall> walls = new HashMap<>();
-    private static boolean logInfo = true;
+    public static boolean logInfo = false;
 
     static int failedPlacement = 0;
     static int failedAngle = 0;
