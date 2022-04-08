@@ -23,7 +23,7 @@ public class Wall {
     private Area area;
     private ChokePoint choke;
     private Base base;
-    private double chokeAngle, bestWallScore, jpsDist;
+    private double chokeAngle, bestWallScore, pathDist;
     private boolean pylonWall, openWall, requireTight, movedStart, pylonWallPiece, allowLifted, flatRamp;
     private Station closestStation;
 
@@ -595,7 +595,7 @@ public class Wall {
             || JBWEB.isReserved(tile, 1, 1) || !JBWEB.isWalkable(tile)
             || (allowLifted && JBWEB.isUsed(tile, 1, 1) != UnitType.Terran_Barracks && JBWEB.isUsed(tile, 1, 1) != UnitType.None)
             || (!allowLifted && JBWEB.isUsed(tile, 1, 1) != UnitType.None && JBWEB.isUsed(tile, 1, 1) != UnitType.Zerg_Larva)
-            || (openWall && (tile).getDistance(pathEnd) - 64.0 > jpsDist / 32)){
+            || (openWall && (tile).getDistance(pathEnd) - 64.0 > pathDist / 32)){
             return false;
         }
         return true;
@@ -644,15 +644,15 @@ public class Wall {
         Position p2 = choke.getNodePosition(ChokePoint.Node.END2).toPosition();
         pylonWallPiece = Math.abs(p1.x - p2.x) * 8 >= 320 || Math.abs(p1.y - p2.y) * 8 >= 256 || p1.getDistance(p2) * 8 >= 288;
 
-        // Create a jps path for limiting BFS exploration using the distance of the jps path
-        Path jpsPath = new Path();
+        // Create a path for limiting BFS exploration using the distance of the path
+        Path path = new Path();
         initializePathPoints();
         checkPathPoints();
-        jpsPath.createUnitPath(new Position(pathStart), new Position(pathEnd), this);
-        jpsDist = jpsPath.getDistance();
+        path.createUnitPath(new Position(pathStart), new Position(pathEnd), this);
+        pathDist = path.getDistance();
 
         // If we can't reach the end/start points, the Wall is likely not possible and won't be attempted
-        if (!jpsPath.isReachable())
+        if (!path.isReachable())
             return;
 
         // Create notable locations to keep Wall pieces within proximity of

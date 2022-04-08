@@ -3,9 +3,6 @@ package jbweb;
 import bwapi.Pair;
 import bwapi.Position;
 import bwapi.TilePosition;
-import jps.Graph;
-import jps.JPS;
-import jps.Tile;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -54,29 +51,6 @@ public class Path {
         return reachable;
     }
 
-    /// Converts the JBWEB walk grid to a JPS walk grid.
-    private List<List<jps.Tile>> makeJPSGrid(boolean[][] walkGrid) {
-        // The API for accessing these grids:
-        // - JBWEB: access[x][y]
-        // - JPS: access.get(x, y)
-        //
-        // But when constructing the JPS object, it assumes the grid is structured as:
-        // - access[y][x]
-        //
-        // So we need to rotate the grid we produce for JPS.
-        List<List<Tile>> tiles = new ArrayList<>();
-        for (int y = 0; y < walkGrid.length; y++) {
-            List<Tile> tileRow = new ArrayList<>();
-            for (int x = 0; x < walkGrid[y].length; x++) {
-                Tile tile = new Tile(x, y);
-                tile.setWalkable(JBWEB.walkGrid[x][y]);
-                tileRow.add(tile);
-            }
-            tiles.add(tileRow);
-        }
-        return tiles;
-    }
-
     /// Creates a path from the source to the target using JPS and collision provided by BWEB based on walkable tiles and used tiles.
     public void createUnitPath(Position s, Position t, Wall wall) {
         target = new TilePosition(t);
@@ -119,13 +93,10 @@ public class Path {
         }
 
         // If we found a path, store what was found
-        List<List<Tile>> grid = makeJPSGrid(JBWEB.walkGrid);
-        JPS<jps.Tile> jps = JPS.JPSFactory.getJPS(new Graph<>(grid), Graph.Diagonal.NO_OBSTACLES);
-        Queue<jps.Tile> path = jps.findPathSync(new jps.Tile(source.x, source.y), new jps.Tile(target.x, target.y));
+        List<TilePosition> path = AStar.find(source, target, JBWEB.walkGrid);
         if (path != null) {
             Position current = s;
-            for (jps.Tile jpsTile : path) {
-                TilePosition tile = new TilePosition(jpsTile.getX(), jpsTile.getY());
+            for (TilePosition tile : path) {
                 dist += new Position(tile).getDistance(current);
                 current = new Position(tile);
                 tiles.add(tile);
