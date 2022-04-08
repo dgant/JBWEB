@@ -370,7 +370,7 @@ public class JBWEB {
                 for (int dx = x * 4; dx < (x * 4) + 4; dx++) {
                     for (int dy = y * 4; dy < (y * 4) + 4; dy++) {
                         WalkPosition w = new WalkPosition(dx, dy);
-                        if (w.isValid(game) && game.isWalkable(w))
+                        if (game.isWalkable(w))
                             cnt++;
                     }
                 }

@@ -54,17 +54,22 @@ public class Path {
         return reachable;
     }
 
-    private List<List<jps.Tile>> arrayToTileList(boolean[][] walkGrid) {
+    /// Converts the JBWEB walk grid to a JPS walk grid.
+    private List<List<jps.Tile>> makeJPSGrid(boolean[][] walkGrid) {
+        // The API for accessing these grids:
+        // - JBWEB: access[x][y]
+        // - JPS: access.get(x, y)
+        //
+        // But when constructing the JPS object, it assumes the grid is structured as:
+        // - access[y][x]
+        //
+        // So we need to rotate the grid we produce for JPS.
         List<List<Tile>> tiles = new ArrayList<>();
         for (int y = 0; y < walkGrid.length; y++) {
             List<Tile> tileRow = new ArrayList<>();
             for (int x = 0; x < walkGrid[y].length; x++) {
                 Tile tile = new Tile(x, y);
-                if (JBWEB.walkGrid[y][x]) {
-                    tile.setWalkable(true);
-                } else {
-                    tile.setWalkable(false);
-                }
+                tile.setWalkable(JBWEB.walkGrid[x][y]);
                 tileRow.add(tile);
             }
             tiles.add(tileRow);
@@ -114,7 +119,7 @@ public class Path {
         }
 
         // If we found a path, store what was found
-        List<List<Tile>> grid = arrayToTileList(JBWEB.walkGrid);
+        List<List<Tile>> grid = makeJPSGrid(JBWEB.walkGrid);
         JPS<jps.Tile> jps = JPS.JPSFactory.getJPS(new Graph<>(grid), Graph.Diagonal.NO_OBSTACLES);
         Queue<jps.Tile> path = jps.findPathSync(new jps.Tile(source.x, source.y), new jps.Tile(target.x, target.y));
         if (path != null) {
