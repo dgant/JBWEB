@@ -20,6 +20,15 @@ public class Walls {
     static int failedTight = 0;
     static int failedSpawn = 0;
     static int failedPower = 0;
+    static int failedNotable = 0;
+    static int failedValid = 0;
+    static int failedSeal = 0;
+    static int permutations = 0;
+    static int minXEvaluated = Integer.MAX_VALUE;
+    static int minYEvaluated = Integer.MAX_VALUE;
+    static int maxXEvaluated = Integer.MIN_VALUE;
+    static int maxYEvaluated = Integer.MIN_VALUE;
+    static int totalEvaluated = 0;
 
     /// Given a vector of UnitTypes, an Area and a Chokepoint, finds an optimal wall placement, returns a valid pointer if a Wall was created.
     /// Note: Highly recommend that only Terran walls attempt to be walled tight, as most Protoss and Zerg wall-ins have gaps to allow your units through.
@@ -33,7 +42,7 @@ public class Walls {
     /// <param name="requireTight"> (Optional) Set as true if you want pixel perfect placement.
     public static Wall createWall(List<UnitType> buildings, Area area, ChokePoint choke, UnitType tightType, List<UnitType> defenses, boolean openWall, boolean requireTight) {
         Date date = new Date(System.currentTimeMillis());
-        SimpleDateFormat formatter= new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
         String timeNow = formatter.format(date);
 
         // Print the clock position of this Wall
@@ -49,12 +58,6 @@ public class Walls {
             for (UnitType building : buildings){
                 System.out.println(building.toString());
             }
-        }
-
-        // Verify inputs are correct
-        if (area == null) {
-            System.out.println("JBWEB: Can't create a wall without a valid Area");
-            return null;
         }
 
         if (choke == null) {
@@ -91,6 +94,15 @@ public class Walls {
             System.out.println("Tight: " + failedTight);
             System.out.println("Path: " + failedPath);
             System.out.println("Spawn: " + failedSpawn);
+            System.out.println("Seal: " + failedSeal);
+            System.out.println("Notable: " + failedNotable);
+            System.out.println("Invalid: " + failedValid);
+            System.out.println("Permutations: " + permutations);
+            System.out.println("Min X Evaluated: " + minXEvaluated);
+            System.out.println("Min Y Evaluated: " + minYEvaluated);
+            System.out.println("Max X Evaluated: " + maxXEvaluated);
+            System.out.println("Max Y Evaluated: " + maxYEvaluated);
+            System.out.println("Total Evaluated: " + totalEvaluated);
             System.out.println("\n");
 
             date = new Date(System.currentTimeMillis() - date.getTime());

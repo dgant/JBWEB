@@ -191,7 +191,7 @@ public class Path {
             TilePosition prev = check;
             check = parentGrid[check.x][check.y];
             dist += new Position(prev).getDistance(new Position(check));
-        } while (check != bfsSource);
+        } while ( ! check.equals(bfsSource));
 
         // HACK: Try to make it more accurate to positions instead of tiles
         Position correctionSource = new Position(tiles.get(tiles.size()-2)); // Second to last tile

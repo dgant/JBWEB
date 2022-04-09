@@ -609,6 +609,8 @@ public class Wall {
         Walls.failedTight = 0;
         Walls.failedSpawn = 0;
         Walls.failedPower = 0;
+        Walls.failedNotable = 0;
+        Walls.failedValid = 0;
 
         // Set BWAPI::Points to invalid (default constructor is None)
         centroid = Position.Invalid;
@@ -658,8 +660,10 @@ public class Wall {
         // Create notable locations to keep Wall pieces within proximity of
         if (base != null) {
             notableLocations.add(base.getCenter());
-            notableLocations.add(new Position(initialPathStart.toPosition().x + 16, initialPathStart.toPosition().y + 16));
-            notableLocations.add(new Position((base.getCenter().x + initialPathStart.toPosition().x)/2, (base.getCenter().y + initialPathStart.toPosition().y)/2));
+            notableLocations.add(initialPathStart.toPosition().add(new Position(16, 16)));
+            notableLocations.add(new Position(
+                    (base.getCenter().x + initialPathStart.toPosition().x)/2,
+                    (base.getCenter().y + initialPathStart.toPosition().y)/2));
         } else {
             notableLocations.add(new Position(initialPathStart.toPosition().x + 16, initialPathStart.toPosition().y + 16));
             notableLocations.add(new Position(initialPathEnd.toPosition().x + 16, initialPathEnd.toPosition().y + 16));
@@ -676,7 +680,7 @@ public class Wall {
                 }
             }
             for (Integer i : indexes) {
-                rawBuildings.remove(i);
+                rawBuildings.remove(i.intValue());
             }
             Collections.sort(rawBuildings);
             rawBuildings.addAll(tmpList);
@@ -690,7 +694,7 @@ public class Wall {
                 }
             }
             for (Integer i : indexes) {
-                rawBuildings.remove(i);
+                rawBuildings.remove(i.intValue());
             }
             Collections.sort(rawBuildings);
             tmpList.addAll(rawBuildings);
@@ -786,15 +790,6 @@ public class Wall {
         pathEnd = initialPathEnd;
     }
 
-    private boolean neighbourArea(Area area) {
-        for (Area subArea : area.getAccessibleNeighbors()) {
-            if (area == subArea) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     private boolean notValidPathPoint(TilePosition testTile) {
         return !testTile.isValid(JBWEB.game)
                 || !JBWEB.isWalkable(testTile)
@@ -851,7 +846,7 @@ public class Wall {
         int last = length - 2;
         while (last >= 0) {
             // Compare UnitType string lexicographically
-            if (rawBuildings.get(last).toString().compareTo(rawBuildings.get(last + 1).toString()) < 0) {
+            if (rawBuildings.get(last).id > rawBuildings.get(last + 1).id) {
                 break;
             }
             last--;
@@ -867,7 +862,7 @@ public class Wall {
         // Find the rightmost successor to the pivot
         for (int i = length - 1; i > last; i--) {
             // Compare UnitType string lexicographically
-            if (rawBuildings.get(i).toString().compareTo(rawBuildings.get(last).toString()) > 0) {
+            if (rawBuildings.get(i).id > rawBuildings.get(last).id) {
                 nextGreater = i;
                 break;
             }
@@ -876,20 +871,23 @@ public class Wall {
         // Swap the successor and the pivot
         int left = nextGreater;
         int right = last;
-        UnitType temp = rawBuildings.get(left);
-        rawBuildings.add(left, rawBuildings.get(right));
-        rawBuildings.add(right, temp);
+        UnitType newLeft = rawBuildings.get(right);
+        UnitType newRight = rawBuildings.get(left);
+        rawBuildings.set(left, newLeft);
+        rawBuildings.set(right, newRight);
 
         // Reverse the sub-array starting from left to the right, both inclusive
         left = last + 1;
         right = length - 1;
         while (left < right) {
-            temp = rawBuildings.get(left);
-            rawBuildings.add(left++, rawBuildings.get(right));
-            rawBuildings.add(right--, temp);
+            newLeft = rawBuildings.get(right);
+            newRight = rawBuildings.get(left);
+            rawBuildings.set(left++, newLeft);
+            rawBuildings.set(right--, newRight);
         }
 
         // Return true as the next_permutation is done
+        Walls.permutations += 1;
         return true;
     }
 
@@ -899,7 +897,8 @@ public class Wall {
             currentLayout.clear();
             typeIterator = rawBuildings.listIterator();
             addNextPiece(creationStart);
-        } while (JBWEB.game.self().getRace() == Race.Zerg ? nextPermutationRawBuildings(rawBuildings.indexOf(UnitType.Zerg_Hatchery), rawBuildings.size()-1)
+        } while (JBWEB.game.self().getRace() == Race.Zerg
+            ? nextPermutationRawBuildings(rawBuildings.indexOf(UnitType.Zerg_Hatchery), rawBuildings.size()-1)
             : nextPermutationRawBuildings(0, rawBuildings.indexOf(UnitType.Protoss_Pylon)));
 
         for (TilePosition tile : bestLayout.keySet()) {
@@ -911,20 +910,28 @@ public class Wall {
     }
 
     private void addNextPiece(TilePosition start) {
+        boolean isFirstPiece = typeIterator.nextIndex() == 0;
+
         // Get the value without incrementing
         UnitType type = typeIterator.next();
         typeIterator.previous();
-        int radius = (openWall || typeIterator == rawBuildings.iterator()) ? 8 : 4;
+        int radius = (openWall || isFirstPiece) ? 8 : 4;
 
         for (int x = start.x - radius; x < start.x + radius; x++) {
             for (int y = start.y - radius; y < start.y + radius; y++) {
                 TilePosition tile = new TilePosition(x, y);
+                Walls.totalEvaluated++;
+                Walls.minXEvaluated = Math.min(Walls.minXEvaluated, x);
+                Walls.minYEvaluated = Math.min(Walls.minYEvaluated, y);
+                Walls.maxXEvaluated = Math.max(Walls.maxXEvaluated, x);
+                Walls.maxYEvaluated = Math.max(Walls.maxYEvaluated, y);
 
                 if (!tile.isValid(JBWEB.game)) {
+                    Walls.failedValid++;
                     continue;
                 }
 
-                Position center = new Position(tile.toPosition().x + type.tileWidth()*16, tile.toPosition().y + type.tileHeight()*16);
+                Position center = tile.toPosition().add(new Position(type.tileWidth()*16, type.tileHeight()*16));
                 Position closestGeo = JBWEB.getClosestChokeTile(choke, center);
 
                 // Open walls need to be placed within proximity of notable features
@@ -939,8 +946,8 @@ public class Wall {
                         }
                     }
                     if (center.getDistance(closestNotable) >= 256.0 || center.getDistance(closestNotable) >= closestGeo.getDistance(closestNotable) + 48.0) {
-
-                        continue;
+                        Walls.failedNotable++;
+                        //continue;
                     }
                 }
 
@@ -952,6 +959,7 @@ public class Wall {
                             new Position(new TilePosition(tile.toPosition().x + type.tileWidth(), tile.toPosition().y + type.tileHeight())).getDistance(new Position(choke.getCenter())));
                     double dist = Math.min(m1, m2);
                     if (dist < 64.0) {
+                        Walls.failedSeal++;
                         continue;
                     }
                 }
@@ -994,9 +1002,8 @@ public class Wall {
                     }
                 }
 
-
                 // 3) Erase this current placement and repeat
-                if (typeIterator != rawBuildings.listIterator()) {
+                if (typeIterator.nextIndex() > 0) {
                     typeIterator.previous();
                 }
 
@@ -1081,7 +1088,7 @@ public class Wall {
                     if (score < scoreBest) {
                         JBWEB.addUsed(t, building);
                         Path pathOut = findPathOut();
-                        if ((openWall && pathOut.isReachable()) || !openWall) {
+                        if (!openWall || pathOut.isReachable()) {
                             tileBest = t;
                             scoreBest = score;
                         }
@@ -1230,7 +1237,7 @@ public class Wall {
         if (drawAngles) {
             for (Position pos1 : anglePositions) {
                 for (Position pos2 : anglePositions) {
-                    if (pos1 == pos2) {
+                    if (pos1.equals(pos2)) {
                         continue;
                     }
 
